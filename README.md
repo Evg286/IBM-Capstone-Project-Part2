@@ -1,2 +1,1 @@
-# IBM-Capstone-Project-Part2
-The final assignment in the IBM Data Science Program
+# IBM-Capstone-Project- Opening a Sushi Restaurant in Beer-Sheva, Israel
