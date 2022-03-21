@@ -1,0 +1,2730 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Opening a Sushi Restaurant in Beer Sheva, Israel"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Introduction\n",
+    "\n",
+    "Mrs. Name wishes to expand her Sushi franchise into Beer Sheva, Israel. The purpose of this work to help her find suitable locations in Beer Sheva for Mrs. Name's restaurant. Unfortunately, Mrs. Name has some strict specifications that we will have to consider upon searching for a suitable venue:\n",
+    "1. The propety must be suitable for a restaurant business.\n",
+    "2. The property must be 50-150 sqm in size.\n",
+    "3. The property must be located on the first floor.\n",
+    "4. The property's monthly rent fees must not exceed 20,000 NIS.\n",
+    "5. The property must be located as far from its competitors as possible."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Data Overview\n",
+    "\n",
+    "The final product will be a list of suitable locations. To produce this list, we will use the Foursquare API and available data from the Beer Sheva Municipality, Google Maps, The Israel Bureau of Statistics, local real estate websites. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Methodology\n",
+    "\n",
+    "Stage 1:\n",
+    "Collecting the data and building the dataframes.\n",
+    "\n",
+    "Stage 2:\n",
+    "Mapping the dataframes.\n",
+    "\n",
+    "Stage 3:\n",
+    "Ranking properties based on their proximity to competitors."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Stage 1 - Collecting Data and Building Datasets"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1329,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Libraries imported.\n"
+     ]
+    }
+   ],
+   "source": [
+    "import numpy as np # library to handle data in a vectorized manner\n",
+    "\n",
+    "import pandas as pd # library for data analsysis\n",
+    "pd.set_option('display.max_columns', None)\n",
+    "pd.set_option('display.max_rows', None)\n",
+    "\n",
+    "print('Libraries imported.')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "An official open data website of the Beer Sheva municipality, offers different statistical data on the city has databases complete with neighborhoods, street names, house numbers and coordinates. We will combine them into a single dataset.\n",
+    "\n",
+    "https://www.beer-sheva.muni.il/OpenData/Lists/Packages/CustomDispForm.aspx?ID=171\n",
+    "\n",
+    "\n",
+    "https://www.beer-sheva.muni.il/OpenData/Lists/Packages/CustomDispForm.aspx?ID=152\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's download the datasets from the links above, and load them onto pandas dataframes."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1330,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>StreetCode</th>\n",
+       "      <th>HouseNuber</th>\n",
+       "      <th>cityCode</th>\n",
+       "      <th>streetName</th>\n",
+       "      <th>letter</th>\n",
+       "      <th>lat</th>\n",
+       "      <th>lon</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>102</td>\n",
+       "      <td>18.0</td>\n",
+       "      <td>9000</td>\n",
+       "      <td>דרך חברון</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.238322</td>\n",
+       "      <td>34.795871</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>833</td>\n",
+       "      <td>20.0</td>\n",
+       "      <td>9000</td>\n",
+       "      <td>המלאכה</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.237878</td>\n",
+       "      <td>34.796022</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>102</td>\n",
+       "      <td>155.0</td>\n",
+       "      <td>9000</td>\n",
+       "      <td>דרך חברון</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.253655</td>\n",
+       "      <td>34.821186</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>102</td>\n",
+       "      <td>159.0</td>\n",
+       "      <td>9000</td>\n",
+       "      <td>דרך חברון</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.254785</td>\n",
+       "      <td>34.821342</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>531</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>9000</td>\n",
+       "      <td>האורגים</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.254845</td>\n",
+       "      <td>34.817054</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   StreetCode  HouseNuber  cityCode streetName letter        lat        lon\n",
+       "0         102        18.0      9000  דרך חברון    NaN  31.238322  34.795871\n",
+       "1         833        20.0      9000     המלאכה    NaN  31.237878  34.796022\n",
+       "2         102       155.0      9000  דרך חברון    NaN  31.253655  34.821186\n",
+       "3         102       159.0      9000  דרך חברון    NaN  31.254785  34.821342\n",
+       "4         531         5.0      9000    האורגים    NaN  31.254845  34.817054"
+      ]
+     },
+     "execution_count": 1330,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_Addresses = pd.read_csv(r'C:\\Users\\evg28\\Downloads\\addresses.csv')\n",
+    "df_Addresses.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now, let's clean it up."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1331,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>18.0</td>\n",
+       "      <td>דרך חברון</td>\n",
+       "      <td>דרך חברון 18.0</td>\n",
+       "      <td>31.238322</td>\n",
+       "      <td>34.795871</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>20.0</td>\n",
+       "      <td>המלאכה</td>\n",
+       "      <td>המלאכה 20.0</td>\n",
+       "      <td>31.237878</td>\n",
+       "      <td>34.796022</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>155.0</td>\n",
+       "      <td>דרך חברון</td>\n",
+       "      <td>דרך חברון 155.0</td>\n",
+       "      <td>31.253655</td>\n",
+       "      <td>34.821186</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>159.0</td>\n",
+       "      <td>דרך חברון</td>\n",
+       "      <td>דרך חברון 159.0</td>\n",
+       "      <td>31.254785</td>\n",
+       "      <td>34.821342</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>5.0</td>\n",
+       "      <td>האורגים</td>\n",
+       "      <td>האורגים 5.0</td>\n",
+       "      <td>31.254845</td>\n",
+       "      <td>34.817054</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   House Number Street Name     Full Address   Latitude  Longitude\n",
+       "0          18.0   דרך חברון   דרך חברון 18.0  31.238322  34.795871\n",
+       "1          20.0      המלאכה      המלאכה 20.0  31.237878  34.796022\n",
+       "2         155.0   דרך חברון  דרך חברון 155.0  31.253655  34.821186\n",
+       "3         159.0   דרך חברון  דרך חברון 159.0  31.254785  34.821342\n",
+       "4           5.0     האורגים      האורגים 5.0  31.254845  34.817054"
+      ]
+     },
+     "execution_count": 1331,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Deleting unnecessary columns\n",
+    "del df_Addresses['letter'], df_Addresses['cityCode'], df_Addresses['StreetCode']\n",
+    "#Editing column names\n",
+    "df_Addresses = df_Addresses.rename(columns={'HouseNuber':'House Number', 'streetName': 'Street Name', 'lat':'Latitude','lon':'Longitude'})\n",
+    "\n",
+    "#Adding a column with the full address\n",
+    "df_Addresses.insert(2, 'Full Address', '')\n",
+    "#Combining street name and house number values into the new column\n",
+    "df_Addresses['Full Address'] = df_Addresses['Street Name'] + ' ' + df_Addresses['House Number'].astype(str)\n",
+    "\n",
+    "df_Addresses.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1332,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>שם ראשי</th>\n",
+       "      <th>תואר</th>\n",
+       "      <th>שם מישני</th>\n",
+       "      <th>קבוצה</th>\n",
+       "      <th>קבוצה נוספת</th>\n",
+       "      <th>סוג</th>\n",
+       "      <th>קוד</th>\n",
+       "      <th>שכונה</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>אוסישקין</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>מנחם (מנדל)</td>\n",
+       "      <td>ד. הסטוריה יהודית</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>רחוב</td>\n",
+       "      <td>801.0</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>אוסקר</td>\n",
+       "      <td>פרופ'</td>\n",
+       "      <td>לוי</td>\n",
+       "      <td>ב. תושבי העיר</td>\n",
+       "      <td>יא. תרבות ומדע</td>\n",
+       "      <td>כיכר</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>אחד העם</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>ד. הסטוריה יהודית</td>\n",
+       "      <td>יא. תרבות ומדע</td>\n",
+       "      <td>רחוב</td>\n",
+       "      <td>802.0</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>אלי כהן</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>ט. לוחמי ישראל</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>צומת</td>\n",
+       "      <td>613.0</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>אסלן</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>בינימין</td>\n",
+       "      <td>ב. תושבי העיר</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>כיכר</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "    שם ראשי   תואר     שם מישני              קבוצה     קבוצה נוספת   סוג  \\\n",
+       "0  אוסישקין    NaN  מנחם (מנדל)  ד. הסטוריה יהודית             NaN  רחוב   \n",
+       "1     אוסקר  פרופ'          לוי      ב. תושבי העיר  יא. תרבות ומדע  כיכר   \n",
+       "2   אחד העם    NaN          NaN  ד. הסטוריה יהודית  יא. תרבות ומדע  רחוב   \n",
+       "3   אלי כהן    NaN          NaN     ט. לוחמי ישראל             NaN  צומת   \n",
+       "4      אסלן    NaN      בינימין      ב. תושבי העיר             NaN  כיכר   \n",
+       "\n",
+       "     קוד שכונה  \n",
+       "0  801.0     א  \n",
+       "1    NaN     א  \n",
+       "2  802.0     א  \n",
+       "3  613.0     א  \n",
+       "4    NaN     א  "
+      ]
+     },
+     "execution_count": 1332,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_Streetnames = pd.read_csv(r'C:\\Users\\evg28\\Downloads\\street-names.csv')\n",
+    "df_Streetnames.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's clean the second dataset."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1333,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Neighborhood</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>אוסישקין</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>אוסקר</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>אחד העם</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>אלי כהן</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>אסלן</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  Street Name Neighborhood\n",
+       "0    אוסישקין            א\n",
+       "1       אוסקר            א\n",
+       "2     אחד העם            א\n",
+       "3     אלי כהן            א\n",
+       "4        אסלן            א"
+      ]
+     },
+     "execution_count": 1333,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Deleting unnecessary columns\n",
+    "del df_Streetnames['תואר'], df_Streetnames['קבוצה'], df_Streetnames['קבוצה נוספת'], df_Streetnames['סוג'], df_Streetnames['קוד'], df_Streetnames['שם מישני']\n",
+    "#Editing column names\n",
+    "df_Streetnames = df_Streetnames.rename(columns={'שכונה':'Neighborhood', 'שם ראשי': 'Street Name'})\n",
+    "df_Streetnames.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "A quick review of the data reveals a substantial discrepency in the names of streets in the datasets. This will require a standartization if the values are to be merged into a single dataset. \n",
+    "\n",
+    "Luckily, while Beer Sheva has over a thousand street names, our relevant datasets (available venues for rent and competitors) will consist of a mere dozen rows at most, so we may want to avoid correcting hundreds of names, and rather standardize only the relevant ones."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's find available venues for rent and load them onto a dataframe. \n",
+    "\n",
+    "For this purpose, we can check popular Israeli real estate billboards, starting with Yad2 (the most popular).\n",
+    "\n",
+    "The link below leads to the results of the query entered on Yad2 with the parameters required by Mrs. Name:\n",
+    "https://www.yad2.co.il/realestate/commercial?area=22&dealType=1&property=13,20&price=-1-20000&squaremeter=100-150\n",
+    "\n",
+    "Let's try to scrape it to collect the necessary data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1334,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Importing libraries\n",
+    "import requests\n",
+    "from urllib.request import urlopen\n",
+    "from bs4 import BeautifulSoup"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1335,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[<h1 class=\"title\">?Are you for real</h1>]\n",
+      "[<h2 class=\"sub-title\">אנו מניחים שגולשים כאן בני אנוש<br/>אבל רק כדי לוודא, אתם יודעים כבר מה לעשות...</h2>]\n",
+      "[<img alt=\"לוגו יד2\" class=\"logo\" src=\"https://assets.yad2.co.il/yad2site/y2assets/images/header/yad2Logo.png\"/>, <img alt=\"לוגו יד2\" class=\"logo-mobile\" src=\"https://assets.yad2.co.il/yad2site/y2assets/images/header/Yad2_logo_white2.svg\"/>, <img alt=\"\" class=\"robot-captcha\" src=\"https://assets.yad2.co.il/y2_captcha_error_page/robot_checkup.png\"/>]\n"
+     ]
+    }
+   ],
+   "source": [
+    "#Scraping the webpage\n",
+    "url_rent = 'https://www.yad2.co.il/realestate/commercial?area=22&dealType=1&property=20,13&price=5000--1'\n",
+    "page_rent = requests.get(url_rent)\n",
+    "soup = BeautifulSoup(page_rent.text, 'html.parser')\n",
+    "print(soup.find_all('h1'))\n",
+    "print(soup.find_all('h2'))\n",
+    "print(soup.find_all('img'))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Apparently (and as provided in the EULA: https://www.yad2.co.il/eula), Yad2 prohibits scraping their webpages. However, our query's results page returned only a dozen of possible locations, so they may still be copied manually and used to create a dataframe. \n",
+    "\n",
+    "Moreover, after examining each location, we might find some of them unsuitable, while others might lack critical data, such as an address, as is often the case with ads that are posted by realters, which might shorten our dataset even more.\n",
+    "\n",
+    "Unfortunately, Yad2 lacks \"restaurants\" in its property types, and has yielded only a few suitable venues. If so, let us expand our search to other sources to fill our dataframe.   \n",
+    "\n",
+    "Another popular Israeli billboard is called \"Homeless\". Unlike Yad2, it does include \"restaurants/coffee shops\" as part of its property types. The link below is the results page of our query on Homeless, which has yielded one result:\n",
+    "\n",
+    "https://www.homeless.co.il/iski/city=%d7%91%d7%90%d7%a8%20%d7%a9%d7%91%d7%a2$$inumber3=14,8$$inumber4=5$$flong3_1=1000000\n",
+    "\n",
+    "A third popular billboard has yilded no results at all:\n",
+    "\n",
+    "https://nadlan.ynet.co.il/search/commercial-for-rent/%D7%91%D7%90%D7%A8%20%D7%A9%D7%91%D7%A2,%20%D7%99%D7%A9%D7%A8%D7%90%D7%9C?pts=1181&maxp=20000"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1336,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Available Properties</th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Cost</th>\n",
+       "      <th>Size</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Venue2</td>\n",
+       "      <td>התקוה 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>150</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Venue3</td>\n",
+       "      <td>בן צבי יצחק 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>91</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  Available Properties      Full Address Cost Size\n",
+       "0               Venue1      סוקולוב 43.0  NaN  120\n",
+       "1               Venue2        התקוה 10.0  NaN  150\n",
+       "2               Venue3  בן צבי יצחק 10.0  NaN   91\n",
+       "3               Venue4  אפרים לרון 112.0  NaN  130"
+      ]
+     },
+     "execution_count": 1336,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "venues_for_rent = pd.DataFrame({'Available Properties':['Venue1','Venue2','Venue3','Venue4'],\n",
+    "                               'Full Address':['סוקולוב 43.0','התקוה 10.0','בן צבי יצחק 10.0','אפרים לרון 112.0'],\n",
+    "                               'Cost':['NaN','NaN','NaN','NaN'],\n",
+    "                               'Size':['120','150','91','130']})\n",
+    "\n",
+    "\n",
+    "venues_for_rent"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now, let's check out the locations of the competitors and load them onto a dataframe. \n",
+    "\n",
+    "A query on Trip Advisor returned two results:\n",
+    "https://www.tripadvisor.com/Restaurants-g297741-c38-Beersheba_Southern_District.html.\n",
+    "\n",
+    "A query on Foursquare City Guide returned a handful of results.\n",
+    "https://foursquare.com/explore?mode=url&near=Beersheba%2C%20Israel&nearGeoId=72057594038223466&q=Sushi%20Restaurant\n",
+    "\n",
+    "A similar query on Google Maps faired better with over a dozen hits, including the ones found on Foursquare:\n",
+    "https://www.google.co.il/maps/search/%D7%A1%D7%95%D7%A9%D7%99,+%D7%91%D7%90%D7%A8+%D7%A9%D7%91%D7%A2%E2%80%AD/@31.2613844,34.8604131,12z/data=!3m1!4b1\n",
+    "\n",
+    "Like Yad2, Trip Advisor, and Google don't allow scraping, requiring us to build another dataframe manually. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1337,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Restaurant</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>הרצל 29.0</td>\n",
+       "      <td>Izakaya</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>שד דוד טוביהו 125.0</td>\n",
+       "      <td>Japanica</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>קקל 18.0</td>\n",
+       "      <td>Sushi Bar</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>תל חי 18.0</td>\n",
+       "      <td>SFTH</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>שד חן 8.0</td>\n",
+       "      <td>Natali's Sushi</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>ברוך קטינקא 2.0</td>\n",
+       "      <td>Kampai Street Wok</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>6</th>\n",
+       "      <td>דרך השלום 52.0</td>\n",
+       "      <td>Sushi night bar</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7</th>\n",
+       "      <td>ההנדסה 1.0</td>\n",
+       "      <td>Kampai</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>8</th>\n",
+       "      <td>יצחק אבינו 5.0</td>\n",
+       "      <td>Asyatica</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>9</th>\n",
+       "      <td>שד ירושלים 2.0</td>\n",
+       "      <td>Mukpatzin</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>10</th>\n",
+       "      <td>שד רגר 28.0</td>\n",
+       "      <td>Hanoi</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>11</th>\n",
+       "      <td>חיטה 1.0</td>\n",
+       "      <td>Duohi</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           Full Address         Restaurant\n",
+       "0             הרצל 29.0            Izakaya\n",
+       "1   שד דוד טוביהו 125.0           Japanica\n",
+       "2              קקל 18.0          Sushi Bar\n",
+       "3            תל חי 18.0               SFTH\n",
+       "4             שד חן 8.0     Natali's Sushi\n",
+       "5       ברוך קטינקא 2.0  Kampai Street Wok\n",
+       "6        דרך השלום 52.0    Sushi night bar\n",
+       "7            ההנדסה 1.0             Kampai\n",
+       "8        יצחק אבינו 5.0           Asyatica\n",
+       "9        שד ירושלים 2.0          Mukpatzin\n",
+       "10          שד רגר 28.0              Hanoi\n",
+       "11             חיטה 1.0              Duohi"
+      ]
+     },
+     "execution_count": 1337,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "competitors = pd.DataFrame({'Full Address': ['הרצל 29.0','שד דוד טוביהו 125.0','קקל 18.0',\n",
+    "                         'תל חי 18.0','שד חן 8.0', 'ברוך קטינקא 2.0', \n",
+    "                         'דרך השלום 52.0','ההנדסה 1.0','יצחק אבינו 5.0',\n",
+    "                         'שד ירושלים 2.0','שד רגר 28.0','חיטה 1.0'],\n",
+    "       'Restaurant': ['Izakaya','Japanica','Sushi Bar','SFTH',\n",
+    "                      'Natali\\'s Sushi','Kampai Street Wok', \n",
+    "                      'Sushi night bar','Kampai',\n",
+    "                      'Asyatica','Mukpatzin','Hanoi','Duohi']})\n",
+    "\n",
+    "\n",
+    "competitors"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's combine everything into a single dataframe."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1338,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Restaurant</th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>הרצל 29.0</td>\n",
+       "      <td>Izakaya</td>\n",
+       "      <td>29.0</td>\n",
+       "      <td>הרצל</td>\n",
+       "      <td>31.239183</td>\n",
+       "      <td>34.787364</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>תל חי 18.0</td>\n",
+       "      <td>SFTH</td>\n",
+       "      <td>18.0</td>\n",
+       "      <td>תל חי</td>\n",
+       "      <td>31.251679</td>\n",
+       "      <td>34.788839</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>יצחק אבינו 5.0</td>\n",
+       "      <td>Asyatica</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>יצחק אבינו</td>\n",
+       "      <td>31.261188</td>\n",
+       "      <td>34.795048</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>יצחק אבינו 5.0</td>\n",
+       "      <td>Asyatica</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>יצחק אבינו</td>\n",
+       "      <td>31.261021</td>\n",
+       "      <td>34.795076</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>שד ירושלים 2.0</td>\n",
+       "      <td>Mukpatzin</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>שד ירושלים</td>\n",
+       "      <td>31.245673</td>\n",
+       "      <td>34.782267</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>חיטה 1.0</td>\n",
+       "      <td>Duohi</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>חיטה</td>\n",
+       "      <td>31.235014</td>\n",
+       "      <td>34.800343</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "     Full Address Restaurant  House Number Street Name   Latitude  Longitude\n",
+       "0       הרצל 29.0    Izakaya          29.0        הרצל  31.239183  34.787364\n",
+       "1      תל חי 18.0       SFTH          18.0       תל חי  31.251679  34.788839\n",
+       "2  יצחק אבינו 5.0   Asyatica           5.0  יצחק אבינו  31.261188  34.795048\n",
+       "3  יצחק אבינו 5.0   Asyatica           5.0  יצחק אבינו  31.261021  34.795076\n",
+       "4  שד ירושלים 2.0  Mukpatzin           2.0  שד ירושלים  31.245673  34.782267\n",
+       "5        חיטה 1.0      Duohi           1.0        חיטה  31.235014  34.800343"
+      ]
+     },
+     "execution_count": 1338,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_competitors = competitors.merge(df_Addresses, how = 'inner', sort = False)\n",
+    "df_competitors"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "It seems that over half of the restaurants didn't make it, this is probably due to the inconsistency in street names.\n",
+    "\n",
+    "The missing addresses are:\n",
+    "\"שד דוד טוביהו 125.0\"\n",
+    "\"קקל 18.0\"\n",
+    "\"שד חן 8.0\"\n",
+    "\"ברוך קטינקא 2.0\"\n",
+    "\"דרך השלום 52.0\"\n",
+    "\"ההנדסה 1.0\"\n",
+    "\"שד ירושלים 2.0\"\n",
+    "\"שד רגר 28.0\"\n",
+    "\n",
+    "Let's seek them out and standardize them to fill out our new dataframe."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1339,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "df_Addresses שד טוביהו דוד\n",
+      "df_Streetnames טוביהו\n",
+      "competitors שד דוד טוביהו 125.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Street Name']:\n",
+    "    if 'טוביהו' in i:\n",
+    "        print('df_Addresses', i)\n",
+    "        break\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'טוביהו' in i:\n",
+    "        print('df_Streetnames', i)\n",
+    "for i in competitors['Full Address']:\n",
+    "    if 'טוביהו' in i:\n",
+    "        print('competitors', i)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The result above shows a total discrepancy between the datasets. Now we must standardize the street names."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1340,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses = df_Addresses.replace([\"שד טוביהו דוד\"], \"שד דוד טוביהו\")\n",
+    "df_Streetnames = df_Streetnames.replace([\"טוביהו\"],\"שד דוד טוביהו\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's repeat the process with the rest of the missing locations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1341,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "df_Addresses: קרן קיימת לישראל\n",
+      "df_Streetnames: הדסה-קק\"ל\n",
+      "df_Streetnames: קק\"ל - ארה\"ב\n",
+      "competitors קקל 18.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Street Name']:\n",
+    "    if  'קרן קיימת' in i:\n",
+    "        print('df_Addresses:', i)\n",
+    "        break\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'קק\"ל' in i:\n",
+    "        print('df_Streetnames:', i)\n",
+    "for i in competitors['Full Address']:\n",
+    "    if 'קקל' in i:\n",
+    "        print('competitors', i)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can see a naming mismatch here too: \"קקל\", \"קרן קיימת לישראל\" and \"קק\"ל\". Let's standardize it."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1342,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses = df_Addresses.replace(['קרן קיימת לישראל'],'קקל')\n",
+    "df_Streetnames = df_Streetnames.replace(['הדסה-קק\"ל'], 'קקל')\n",
+    "df_Streetnames = df_Streetnames.replace(['קק\"ל - ארה\"ב'], 'קקל')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's move on to \"שד חן\"."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1343,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "df_Addresses: ח\"ן\n",
+      "df_Streetnames: ריחן\n",
+      "df_Streetnames: חן\n",
+      "competitors שד חן 8.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Street Name']:\n",
+    "    if  'ח\"ן' in i:\n",
+    "        print('df_Addresses:', i)\n",
+    "        break\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'חן' in i:\n",
+    "        print('df_Streetnames:', i)\n",
+    "for i in competitors['Full Address']:\n",
+    "    if 'חן' in i:\n",
+    "        print('competitors', i) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1344,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses = df_Addresses.replace(['ח\"ן'], 'שד חן')\n",
+    "df_Streetnames = df_Streetnames.replace(['חן'], 'שד חן')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Next is \"ברוך קטינקא 2.0\"."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1345,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "df_Addresses: קטינקא ברוך\n",
+      "df_Streetnames: קטינקא\n",
+      "competitors ברוך קטינקא 2.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Street Name']:\n",
+    "    if  'קטי' in i:\n",
+    "        print('df_Addresses:', i)\n",
+    "        break\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'קטי' in i:\n",
+    "        print('df_Streetnames:', i)\n",
+    "for i in competitors['Full Address']:\n",
+    "    if 'קטי' in i:\n",
+    "        print('competitors', i)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1346,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses = df_Addresses.replace(['קטינקא ברוך'], 'ברוך קטינקא')\n",
+    "df_Streetnames = df_Streetnames.replace(['קטינקא'], 'ברוך קטינקא')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Next is \"דרך השלום 52.0\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1347,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "df_Addresses: השלום\n",
+      "df_Streetnames: השלום\n",
+      "competitors דרך השלום 52.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Street Name']:\n",
+    "    if  'השלום' in i:\n",
+    "        print('df_Addresses:', i)\n",
+    "        break\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'השלום' in i:\n",
+    "        print('df_Streetnames:', i)\n",
+    "for i in competitors['Full Address']:\n",
+    "    if 'השלום' in i:\n",
+    "        print('competitors', i) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1348,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses = df_Addresses.replace(['השלום'], 'דרך השלום')\n",
+    "df_Streetnames = df_Streetnames.replace(['השלום'], 'דרך השלום')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Next is \"ההנדסה 1.0\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1349,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "df_Addresses: חיל הנדסה\n",
+      "df_Streetnames: חיל הנדסה\n",
+      "competitors: ההנדסה 1.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Street Name']:\n",
+    "    if 'הנדסה' in i:\n",
+    "        print('df_Addresses:', i)\n",
+    "        break\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'הנדסה' in i:\n",
+    "        print('df_Streetnames:', i)\n",
+    "for i in competitors['Full Address']:\n",
+    "    if 'הנדסה' in i:\n",
+    "        print('competitors:', i)    "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1350,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses = df_Addresses.replace(['חיל הנדסה'], 'ההנדסה')\n",
+    "df_Streetnames = df_Streetnames.replace(['חיל הנדסה'], 'ההנדסה')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Next is \"שד ירושלים 2.0\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1351,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "df_Addresses שד ירושלים\n",
+      "df_Streetnames הצדיק מירושלים\n",
+      "df_Streetnames ירושלים\n",
+      "competitors שד ירושלים 2.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Street Name'].astype(str):\n",
+    "    if 'שד ירושלים' in i:\n",
+    "        print('df_Addresses', i)\n",
+    "        break\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'ירוש' in i:\n",
+    "        print('df_Streetnames', i)\n",
+    "for i in competitors['Full Address']:\n",
+    "    if 'ירוש' in i:\n",
+    "        print('competitors', i)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1352,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Streetnames = df_Streetnames.replace(['ירושלים'], 'שד ירושלים')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The last address is \"שד רגר 28.0\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1353,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "df_Addresses שד רגר יצחק\n",
+      "df_Streetnames רגר\n",
+      "df_Streetnames גרגר הנחלים\n",
+      "competitors שד רגר 28.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Street Name']:\n",
+    "    if 'רגר' in i:\n",
+    "        print('df_Addresses', i)\n",
+    "        break\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'רגר' in i:\n",
+    "        print('df_Streetnames', i)\n",
+    "for i in competitors['Full Address']:\n",
+    "    if 'רגר' in i:\n",
+    "        print('competitors', i)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1354,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses = df_Addresses.replace(['שד רגר יצחק'], 'שד רגר')\n",
+    "df_Streetnames = df_Streetnames.replace (['רגר'], 'שד רגר')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's combine the street name and house number columns into a full address column, and try to join the datasets again."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1355,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses['Full Address'] = df_Addresses['Street Name'] + ' ' + df_Addresses['House Number'].astype(str)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1382,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Restaurant</th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "      <th>Neighborhood</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>הרצל 29.0</td>\n",
+       "      <td>Izakaya</td>\n",
+       "      <td>29.0</td>\n",
+       "      <td>הרצל</td>\n",
+       "      <td>31.2392</td>\n",
+       "      <td>34.7874</td>\n",
+       "      <td>עיר עתיקה</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>שד דוד טוביהו 125.0</td>\n",
+       "      <td>Japanica</td>\n",
+       "      <td>125.0</td>\n",
+       "      <td>שד דוד טוביהו</td>\n",
+       "      <td>31.2506</td>\n",
+       "      <td>34.7719</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>קקל 18.0</td>\n",
+       "      <td>Sushi Bar</td>\n",
+       "      <td>18.0</td>\n",
+       "      <td>קקל</td>\n",
+       "      <td>31.2379</td>\n",
+       "      <td>34.7922</td>\n",
+       "      <td>ד</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>קקל 18.0</td>\n",
+       "      <td>Sushi Bar</td>\n",
+       "      <td>18.0</td>\n",
+       "      <td>קקל</td>\n",
+       "      <td>31.2379</td>\n",
+       "      <td>34.7922</td>\n",
+       "      <td>עיר עתיקה</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>תל חי 18.0</td>\n",
+       "      <td>SFTH</td>\n",
+       "      <td>18.0</td>\n",
+       "      <td>תל חי</td>\n",
+       "      <td>31.2517</td>\n",
+       "      <td>34.7888</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>שד חן 8.0</td>\n",
+       "      <td>Natali's Sushi</td>\n",
+       "      <td>8.0</td>\n",
+       "      <td>שד חן</td>\n",
+       "      <td>31.2666</td>\n",
+       "      <td>34.7775</td>\n",
+       "      <td>רמות</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>6</th>\n",
+       "      <td>ברוך קטינקא 2.0</td>\n",
+       "      <td>Kampai Street Wok</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>ברוך קטינקא</td>\n",
+       "      <td>31.2251</td>\n",
+       "      <td>34.8029</td>\n",
+       "      <td>קרית יהודית</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>7</th>\n",
+       "      <td>דרך השלום 52.0</td>\n",
+       "      <td>Sushi night bar</td>\n",
+       "      <td>52.0</td>\n",
+       "      <td>דרך השלום</td>\n",
+       "      <td>31.2513</td>\n",
+       "      <td>34.8082</td>\n",
+       "      <td>ג</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>8</th>\n",
+       "      <td>ההנדסה 1.0</td>\n",
+       "      <td>Kampai</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>ההנדסה</td>\n",
+       "      <td>31.2446</td>\n",
+       "      <td>34.8127</td>\n",
+       "      <td>א. תעשיה</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>9</th>\n",
+       "      <td>יצחק אבינו 5.0</td>\n",
+       "      <td>Asyatica</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>יצחק אבינו</td>\n",
+       "      <td>31.2612</td>\n",
+       "      <td>34.795</td>\n",
+       "      <td>ד</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>10</th>\n",
+       "      <td>יצחק אבינו 5.0</td>\n",
+       "      <td>Asyatica</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>יצחק אבינו</td>\n",
+       "      <td>31.261</td>\n",
+       "      <td>34.7951</td>\n",
+       "      <td>ד</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>11</th>\n",
+       "      <td>שד ירושלים 2.0</td>\n",
+       "      <td>Mukpatzin</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>שד ירושלים</td>\n",
+       "      <td>31.2457</td>\n",
+       "      <td>34.7823</td>\n",
+       "      <td>ט</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>12</th>\n",
+       "      <td>שד רגר 28.0</td>\n",
+       "      <td>Hanoi</td>\n",
+       "      <td>28.0</td>\n",
+       "      <td>שד רגר</td>\n",
+       "      <td>31.2476</td>\n",
+       "      <td>34.7987</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>13</th>\n",
+       "      <td>חיטה 1.0</td>\n",
+       "      <td>Duohi</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>חיטה</td>\n",
+       "      <td>31.235</td>\n",
+       "      <td>34.8003</td>\n",
+       "      <td>א. תעשיה</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           Full Address         Restaurant  House Number    Street Name  \\\n",
+       "0             הרצל 29.0            Izakaya          29.0           הרצל   \n",
+       "1   שד דוד טוביהו 125.0           Japanica         125.0  שד דוד טוביהו   \n",
+       "2              קקל 18.0          Sushi Bar          18.0            קקל   \n",
+       "3              קקל 18.0          Sushi Bar          18.0            קקל   \n",
+       "4            תל חי 18.0               SFTH          18.0          תל חי   \n",
+       "5             שד חן 8.0     Natali's Sushi           8.0          שד חן   \n",
+       "6       ברוך קטינקא 2.0  Kampai Street Wok           2.0    ברוך קטינקא   \n",
+       "7        דרך השלום 52.0    Sushi night bar          52.0      דרך השלום   \n",
+       "8            ההנדסה 1.0             Kampai           1.0         ההנדסה   \n",
+       "9        יצחק אבינו 5.0           Asyatica           5.0     יצחק אבינו   \n",
+       "10       יצחק אבינו 5.0           Asyatica           5.0     יצחק אבינו   \n",
+       "11       שד ירושלים 2.0          Mukpatzin           2.0     שד ירושלים   \n",
+       "12          שד רגר 28.0              Hanoi          28.0         שד רגר   \n",
+       "13             חיטה 1.0              Duohi           1.0           חיטה   \n",
+       "\n",
+       "   Latitude Longitude Neighborhood  \n",
+       "0   31.2392   34.7874    עיר עתיקה  \n",
+       "1   31.2506   34.7719            א  \n",
+       "2   31.2379   34.7922            ד  \n",
+       "3   31.2379   34.7922    עיר עתיקה  \n",
+       "4   31.2517   34.7888            א  \n",
+       "5   31.2666   34.7775         רמות  \n",
+       "6   31.2251   34.8029  קרית יהודית  \n",
+       "7   31.2513   34.8082            ג  \n",
+       "8   31.2446   34.8127     א. תעשיה  \n",
+       "9   31.2612    34.795            ד  \n",
+       "10   31.261   34.7951            ד  \n",
+       "11  31.2457   34.7823            ט  \n",
+       "12  31.2476   34.7987            א  \n",
+       "13   31.235   34.8003     א. תעשיה  "
+      ]
+     },
+     "execution_count": 1382,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_comb = competitors.merge(df_Addresses, how = 'inner', sort = False)\n",
+    "df_comb = df_comb.merge(df_Streetnames, how = 'inner', sort = False)\n",
+    "df_comb"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Much better!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now, let's do the same with \"venues_for_rent\" to get the coordinates of the available properties for rent."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1383,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Available Properties</th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Cost</th>\n",
+       "      <th>Size</th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Venue2</td>\n",
+       "      <td>התקוה 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>150</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>התקוה</td>\n",
+       "      <td>31.2482</td>\n",
+       "      <td>34.7993</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Venue3</td>\n",
+       "      <td>בן צבי יצחק 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>91</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>בן צבי יצחק</td>\n",
+       "      <td>31.2433</td>\n",
+       "      <td>34.799</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  Available Properties      Full Address Cost Size  House Number  Street Name  \\\n",
+       "0               Venue1      סוקולוב 43.0  NaN  120           NaN          NaN   \n",
+       "1               Venue2        התקוה 10.0  NaN  150          10.0        התקוה   \n",
+       "2               Venue3  בן צבי יצחק 10.0  NaN   91          10.0  בן צבי יצחק   \n",
+       "3               Venue4  אפרים לרון 112.0  NaN  130           NaN          NaN   \n",
+       "\n",
+       "    Latitude  Longitude  \n",
+       "0  31.245394  34.789741  \n",
+       "1    31.2482    34.7993  \n",
+       "2    31.2433     34.799  \n",
+       "3  31.230874  34.767214  "
+      ]
+     },
+     "execution_count": 1383,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_venues = venues_for_rent.merge(df_Addresses, how = 'inner', sort = False)\n",
+    "df_venues"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Looks like we are missing two addresses. Let's check them out."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1384,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for i in df_Addresses['Street Name'].astype(str):\n",
+    "    if 'לרון' in i:\n",
+    "        print(i)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "As we can see, 'לרון' is absent from df_Addresses"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1385,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "סוקולוב 43.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Full Address'].astype(str):\n",
+    "    if 'סוקולוב 43.0' in i:\n",
+    "        print(i)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Apparently, the address 'סוקולוב 43.0' is absent from df_Addresses.\n",
+    "\n",
+    "Now, let's fill in missing values."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1386,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_Addresses = df_Addresses.append({'Full Address': 'סוקולוב 43.0', 'Latitude':'31.245394', 'Longitude':'34.789741'}, ignore_index = True)\n",
+    "df_Addresses = df_Addresses.append({'Full Address': 'אפרים לרון 112.0', 'Latitude':'31.230874', 'Longitude':'34.767214'}, ignore_index = True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1387,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "אפרים לרון 112.0\n",
+      "אפרים לרון 112.0\n",
+      "אפרים לרון\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Addresses['Full Address'].astype(str):\n",
+    "    if 'לרון' in i:\n",
+    "        print(i)\n",
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'לרון' in i:\n",
+    "        print(i)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1388,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Standardizing df_Streetnames\n",
+    "df_Streetnames = df_Streetnames.replace(['לרון'], 'אפרים לרון')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1389,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Available Properties</th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Cost</th>\n",
+       "      <th>Size</th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Venue2</td>\n",
+       "      <td>התקוה 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>150</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>התקוה</td>\n",
+       "      <td>31.2482</td>\n",
+       "      <td>34.7993</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Venue3</td>\n",
+       "      <td>בן צבי יצחק 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>91</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>בן צבי יצחק</td>\n",
+       "      <td>31.2433</td>\n",
+       "      <td>34.799</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  Available Properties      Full Address Cost Size  House Number  Street Name  \\\n",
+       "0               Venue1      סוקולוב 43.0  NaN  120           NaN          NaN   \n",
+       "1               Venue1      סוקולוב 43.0  NaN  120           NaN          NaN   \n",
+       "2               Venue2        התקוה 10.0  NaN  150          10.0        התקוה   \n",
+       "3               Venue3  בן צבי יצחק 10.0  NaN   91          10.0  בן צבי יצחק   \n",
+       "4               Venue4  אפרים לרון 112.0  NaN  130           NaN          NaN   \n",
+       "5               Venue4  אפרים לרון 112.0  NaN  130           NaN          NaN   \n",
+       "\n",
+       "    Latitude  Longitude  \n",
+       "0  31.245394  34.789741  \n",
+       "1  31.245394  34.789741  \n",
+       "2    31.2482    34.7993  \n",
+       "3    31.2433     34.799  \n",
+       "4  31.230874  34.767214  \n",
+       "5  31.230874  34.767214  "
+      ]
+     },
+     "execution_count": 1389,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Updating df_venues\n",
+    "df_venues = venues_for_rent.merge(df_Addresses, how = 'inner', sort = False)\n",
+    "df_venues"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1390,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "צבי\n",
+      "צביה המלכה\n",
+      "הצבי\n",
+      "בן צבי יצחק\n",
+      "צביה ויצחק\n",
+      "אורי צבי\n",
+      "צבי-רן\n"
+     ]
+    }
+   ],
+   "source": [
+    "for i in df_Streetnames['Street Name'].astype(str):\n",
+    "    if 'צבי' in i:\n",
+    "        print(i)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1391,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Standardizing df_Streetnames\n",
+    "df_Streetnames = df_Streetnames.replace(['בן צבי'], 'בן צבי יצחק')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1392,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Available Properties</th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Cost</th>\n",
+       "      <th>Size</th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "      <th>Neighborhood</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>Venue2</td>\n",
+       "      <td>התקוה 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>150</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>התקוה</td>\n",
+       "      <td>31.2482</td>\n",
+       "      <td>34.7993</td>\n",
+       "      <td>מ. אזרחי</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>Venue3</td>\n",
+       "      <td>בן צבי יצחק 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>91</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>בן צבי יצחק</td>\n",
+       "      <td>31.2433</td>\n",
+       "      <td>34.799</td>\n",
+       "      <td>מ. אזרחי</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  Available Properties      Full Address Cost Size  House Number  Street Name  \\\n",
+       "0               Venue1      סוקולוב 43.0  NaN  120           NaN          NaN   \n",
+       "1               Venue1      סוקולוב 43.0  NaN  120           NaN          NaN   \n",
+       "2               Venue4  אפרים לרון 112.0  NaN  130           NaN          NaN   \n",
+       "3               Venue4  אפרים לרון 112.0  NaN  130           NaN          NaN   \n",
+       "4               Venue2        התקוה 10.0  NaN  150          10.0        התקוה   \n",
+       "5               Venue3  בן צבי יצחק 10.0  NaN   91          10.0  בן צבי יצחק   \n",
+       "\n",
+       "    Latitude  Longitude Neighborhood  \n",
+       "0  31.245394  34.789741          NaN  \n",
+       "1  31.245394  34.789741          NaN  \n",
+       "2  31.230874  34.767214          NaN  \n",
+       "3  31.230874  34.767214          NaN  \n",
+       "4    31.2482    34.7993     מ. אזרחי  \n",
+       "5    31.2433     34.799     מ. אזרחי  "
+      ]
+     },
+     "execution_count": 1392,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Updating df_venues\n",
+    "#df_venues = venues_for_rent.merge(df_Addresses, how = 'inner', sort = False)\n",
+    "df_venues = df_venues.merge(df_Streetnames, how = 'inner', sort = False)\n",
+    "df_venues"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Two neighborhood values are still missing, let's fill them manually."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1393,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Available Properties</th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Cost</th>\n",
+       "      <th>Size</th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "      <th>Neighborhood</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "      <td>א</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "      <td>נווה זאב</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>Venue2</td>\n",
+       "      <td>התקוה 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>150</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>התקוה</td>\n",
+       "      <td>31.2482</td>\n",
+       "      <td>34.7993</td>\n",
+       "      <td>מ. אזרחי</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>Venue3</td>\n",
+       "      <td>בן צבי יצחק 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>91</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>בן צבי יצחק</td>\n",
+       "      <td>31.2433</td>\n",
+       "      <td>34.799</td>\n",
+       "      <td>מ. אזרחי</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  Available Properties      Full Address Cost Size  House Number  Street Name  \\\n",
+       "0               Venue1      סוקולוב 43.0  NaN  120           NaN          NaN   \n",
+       "1               Venue1      סוקולוב 43.0  NaN  120           NaN          NaN   \n",
+       "2               Venue4  אפרים לרון 112.0  NaN  130           NaN          NaN   \n",
+       "3               Venue4  אפרים לרון 112.0  NaN  130           NaN          NaN   \n",
+       "4               Venue2        התקוה 10.0  NaN  150          10.0        התקוה   \n",
+       "5               Venue3  בן צבי יצחק 10.0  NaN   91          10.0  בן צבי יצחק   \n",
+       "\n",
+       "    Latitude  Longitude Neighborhood  \n",
+       "0  31.245394  34.789741            א  \n",
+       "1  31.245394  34.789741     נווה זאב  \n",
+       "2  31.230874  34.767214          NaN  \n",
+       "3  31.230874  34.767214          NaN  \n",
+       "4    31.2482    34.7993     מ. אזרחי  \n",
+       "5    31.2433     34.799     מ. אזרחי  "
+      ]
+     },
+     "execution_count": 1393,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_venues.at[0, 'Neighborhood'] = \"א\"\n",
+    "df_venues.at[1, 'Neighborhood'] = \"נווה זאב\"\n",
+    "df_venues"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now, after cleaning the datasets, lets plot them onto maps."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1394,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Plotting library\n",
+    "import folium\n",
+    "\n",
+    "#geocoding library\n",
+    "from geopy.geocoders import Nominatim\n",
+    "\n",
+    "# Matplotlib and associated plotting modules\n",
+    "import matplotlib.cm as cm\n",
+    "import matplotlib.colors as colors\n",
+    "import matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1395,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\n",
+    "address = 'BeerSheva, Israel'\n",
+    "\n",
+    "geolocator = Nominatim(user_agent=\"bs_explorer\")\n",
+    "location = geolocator.geocode(address)\n",
+    "latitude = location.latitude\n",
+    "longitude = location.longitude"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1396,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Changing column type to enable plotting.\n",
+    "df_venues['Latitude'] = df_venues['Latitude'].astype(float)\n",
+    "df_venues['Longitude'] = df_venues['Longitude'].astype(float)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1397,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div style=\"width:100%;\"><div style=\"position:relative;width:100%;height:0;padding-bottom:60%;\"><span style=\"color:#565656\">Make this Notebook Trusted to load map: File -> Trust Notebook</span><iframe src=\"about:blank\" style=\"position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;\" data-html=%3C%21DOCTYPE%20html%3E%0A%3Chead%3E%20%20%20%20%0A%20%20%20%20%3Cmeta%20http-equiv%3D%22content-type%22%20content%3D%22text/html%3B%20charset%3DUTF-8%22%20/%3E%0A%20%20%20%20%3Cscript%3EL_PREFER_CANVAS%20%3D%20false%3B%20L_NO_TOUCH%20%3D%20false%3B%20L_DISABLE_3D%20%3D%20false%3B%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//cdn.jsdelivr.net/npm/leaflet%401.2.0/dist/leaflet.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js%22%3E%3C/script%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//cdn.jsdelivr.net/npm/leaflet%401.2.0/dist/leaflet.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//rawgit.com/python-visualization/folium/master/folium/templates/leaflet.awesome.rotate.css%22/%3E%0A%20%20%20%20%3Cstyle%3Ehtml%2C%20body%20%7Bwidth%3A%20100%25%3Bheight%3A%20100%25%3Bmargin%3A%200%3Bpadding%3A%200%3B%7D%3C/style%3E%0A%20%20%20%20%3Cstyle%3E%23map%20%7Bposition%3Aabsolute%3Btop%3A0%3Bbottom%3A0%3Bright%3A0%3Bleft%3A0%3B%7D%3C/style%3E%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cstyle%3E%20%23map_1f18f520e96d46849eb03d64f81201d5%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20position%20%3A%20relative%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20width%20%3A%20100.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20height%3A%20100.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20left%3A%200.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20top%3A%200.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/style%3E%0A%20%20%20%20%20%20%20%20%0A%3C/head%3E%0A%3Cbody%3E%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22folium-map%22%20id%3D%22map_1f18f520e96d46849eb03d64f81201d5%22%20%3E%3C/div%3E%0A%20%20%20%20%20%20%20%20%0A%3C/body%3E%0A%3Cscript%3E%20%20%20%20%0A%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20bounds%20%3D%20null%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20map_1f18f520e96d46849eb03d64f81201d5%20%3D%20L.map%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%27map_1f18f520e96d46849eb03d64f81201d5%27%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7Bcenter%3A%20%5B31.2457442%2C34.7925181%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20zoom%3A%2012%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20maxBounds%3A%20bounds%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20layers%3A%20%5B%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20worldCopyJump%3A%20false%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20crs%3A%20L.CRS.EPSG3857%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20tile_layer_087d6f98bbd4479a9a970847a9ff5c5a%20%3D%20L.tileLayer%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%27https%3A//%7Bs%7D.tile.openstreetmap.org/%7Bz%7D/%7Bx%7D/%7By%7D.png%27%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22attribution%22%3A%20null%2C%0A%20%20%22detectRetina%22%3A%20false%2C%0A%20%20%22maxZoom%22%3A%2018%2C%0A%20%20%22minZoom%22%3A%201%2C%0A%20%20%22noWrap%22%3A%20false%2C%0A%20%20%22subdomains%22%3A%20%22abc%22%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1f18f520e96d46849eb03d64f81201d5%29%3B%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_447054d0eafd43e1b78fcbfc9b501411%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.245394%2C34.789741%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1f18f520e96d46849eb03d64f81201d5%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_bf06fdff1a104f729fe6efd33a68a2dc%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_dc0d3c64cf3941658d0d176d8917eebf%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_dc0d3c64cf3941658d0d176d8917eebf%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.245394%2C%2034.789741%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_bf06fdff1a104f729fe6efd33a68a2dc.setContent%28html_dc0d3c64cf3941658d0d176d8917eebf%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_447054d0eafd43e1b78fcbfc9b501411.bindPopup%28popup_bf06fdff1a104f729fe6efd33a68a2dc%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_36c35ae8f86d46a0b33cbe11e4c86921%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.245394%2C34.789741%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1f18f520e96d46849eb03d64f81201d5%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_dbf6da65b83d47b1a5ed601d5500a7bc%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_6e57e3f040b54c7f99ecb7b56033c922%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_6e57e3f040b54c7f99ecb7b56033c922%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.245394%2C%2034.789741%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_dbf6da65b83d47b1a5ed601d5500a7bc.setContent%28html_6e57e3f040b54c7f99ecb7b56033c922%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_36c35ae8f86d46a0b33cbe11e4c86921.bindPopup%28popup_dbf6da65b83d47b1a5ed601d5500a7bc%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_e1b56966093443099a0fefce242033b1%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.230874%2C34.767214%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1f18f520e96d46849eb03d64f81201d5%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_c0042b5f5029465fb1418dfd3d718883%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_def3d34e3e8949a7acb87571411f2383%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_def3d34e3e8949a7acb87571411f2383%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.230874%2C%2034.767214%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_c0042b5f5029465fb1418dfd3d718883.setContent%28html_def3d34e3e8949a7acb87571411f2383%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_e1b56966093443099a0fefce242033b1.bindPopup%28popup_c0042b5f5029465fb1418dfd3d718883%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_1c046d6fdf96473b98a7b9aba91a5730%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.230874%2C34.767214%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1f18f520e96d46849eb03d64f81201d5%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_412334cb8e51452d820feea3b165ad84%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_67ff47ebe4054535b0279f37a51e6d06%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_67ff47ebe4054535b0279f37a51e6d06%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.230874%2C%2034.767214%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_412334cb8e51452d820feea3b165ad84.setContent%28html_67ff47ebe4054535b0279f37a51e6d06%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_1c046d6fdf96473b98a7b9aba91a5730.bindPopup%28popup_412334cb8e51452d820feea3b165ad84%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_95761294538c45b89640e596e7d4ed97%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.248208526000038%2C34.799295502000064%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1f18f520e96d46849eb03d64f81201d5%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_6221262c146545469fcde849abd4475e%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_57efc42e1d864d4c8f7c57deade2aa85%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_57efc42e1d864d4c8f7c57deade2aa85%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.248208526000038%2C%2034.799295502000064%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_6221262c146545469fcde849abd4475e.setContent%28html_57efc42e1d864d4c8f7c57deade2aa85%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_95761294538c45b89640e596e7d4ed97.bindPopup%28popup_6221262c146545469fcde849abd4475e%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_a1d51dcb45df4ae7b028a707bcf06ef9%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.243252943000073%2C34.79904244700003%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1f18f520e96d46849eb03d64f81201d5%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_b224124ef85c41f3b934a9e866965a04%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_129ba9f3906747c3af6eb07f948fa373%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_129ba9f3906747c3af6eb07f948fa373%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.243252943000073%2C%2034.79904244700003%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_b224124ef85c41f3b934a9e866965a04.setContent%28html_129ba9f3906747c3af6eb07f948fa373%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_a1d51dcb45df4ae7b028a707bcf06ef9.bindPopup%28popup_b224124ef85c41f3b934a9e866965a04%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%3C/script%3E onload=\"this.contentDocument.open();this.contentDocument.write(    decodeURIComponent(this.getAttribute('data-html')));this.contentDocument.close();\" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>"
+      ],
+      "text/plain": [
+       "<folium.folium.Map at 0x1fe2ef70a00>"
+      ]
+     },
+     "execution_count": 1397,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Plotting available properties\n",
+    "map_venues = folium.Map(location=[latitude, longitude], zoom_start=12)\n",
+    "for Neighborhood, Latitude, Longitude in zip(df_venues['Neighborhood'], df_venues['Latitude'], df_venues['Longitude']):\n",
+    "    label = '{}, {}'.format(Latitude, Longitude)\n",
+    "    label = folium.Popup(label, parse_html=True)\n",
+    "    folium.CircleMarker(\n",
+    "        [Latitude, Longitude],\n",
+    "        radius=5,\n",
+    "        popup=label,\n",
+    "        color='blue',\n",
+    "        fill=True,\n",
+    "        fill_color='#3186cc',\n",
+    "        fill_opacity=0.7,\n",
+    "        parse_html=False).add_to(map_venues)\n",
+    "map_venues"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The map above shows a cluster of three locations at the center of the city and one isolated location in the south-west. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Next, let's plot the competing venues."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1398,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Changing column type to enable plotting.\n",
+    "df_comb['Latitude'] = df_comb['Latitude'].astype(float)\n",
+    "df_comb['Longitude'] = df_comb['Longitude'].astype(float)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1399,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div style=\"width:100%;\"><div style=\"position:relative;width:100%;height:0;padding-bottom:60%;\"><span style=\"color:#565656\">Make this Notebook Trusted to load map: File -> Trust Notebook</span><iframe src=\"about:blank\" style=\"position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;\" data-html=%3C%21DOCTYPE%20html%3E%0A%3Chead%3E%20%20%20%20%0A%20%20%20%20%3Cmeta%20http-equiv%3D%22content-type%22%20content%3D%22text/html%3B%20charset%3DUTF-8%22%20/%3E%0A%20%20%20%20%3Cscript%3EL_PREFER_CANVAS%20%3D%20false%3B%20L_NO_TOUCH%20%3D%20false%3B%20L_DISABLE_3D%20%3D%20false%3B%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//cdn.jsdelivr.net/npm/leaflet%401.2.0/dist/leaflet.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js%22%3E%3C/script%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//cdn.jsdelivr.net/npm/leaflet%401.2.0/dist/leaflet.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//rawgit.com/python-visualization/folium/master/folium/templates/leaflet.awesome.rotate.css%22/%3E%0A%20%20%20%20%3Cstyle%3Ehtml%2C%20body%20%7Bwidth%3A%20100%25%3Bheight%3A%20100%25%3Bmargin%3A%200%3Bpadding%3A%200%3B%7D%3C/style%3E%0A%20%20%20%20%3Cstyle%3E%23map%20%7Bposition%3Aabsolute%3Btop%3A0%3Bbottom%3A0%3Bright%3A0%3Bleft%3A0%3B%7D%3C/style%3E%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cstyle%3E%20%23map_4a6075c8a125445493c43562dd932365%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20position%20%3A%20relative%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20width%20%3A%20100.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20height%3A%20100.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20left%3A%200.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20top%3A%200.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/style%3E%0A%20%20%20%20%20%20%20%20%0A%3C/head%3E%0A%3Cbody%3E%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22folium-map%22%20id%3D%22map_4a6075c8a125445493c43562dd932365%22%20%3E%3C/div%3E%0A%20%20%20%20%20%20%20%20%0A%3C/body%3E%0A%3Cscript%3E%20%20%20%20%0A%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20bounds%20%3D%20null%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20map_4a6075c8a125445493c43562dd932365%20%3D%20L.map%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%27map_4a6075c8a125445493c43562dd932365%27%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7Bcenter%3A%20%5B31.2457442%2C34.7925181%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20zoom%3A%2012%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20maxBounds%3A%20bounds%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20layers%3A%20%5B%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20worldCopyJump%3A%20false%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20crs%3A%20L.CRS.EPSG3857%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20tile_layer_5dbca7507fd047c0a32c81193de8d675%20%3D%20L.tileLayer%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%27https%3A//%7Bs%7D.tile.openstreetmap.org/%7Bz%7D/%7Bx%7D/%7By%7D.png%27%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22attribution%22%3A%20null%2C%0A%20%20%22detectRetina%22%3A%20false%2C%0A%20%20%22maxZoom%22%3A%2018%2C%0A%20%20%22minZoom%22%3A%201%2C%0A%20%20%22noWrap%22%3A%20false%2C%0A%20%20%22subdomains%22%3A%20%22abc%22%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_3c9eab7b57654eff83ae0e1bdba445d8%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.23918282300008%2C34.787364027000024%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_8250eb4411024cb0918e6f2ddba928fa%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_1e06eb7e39d74b57bba31aa3a2b6a4c4%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_1e06eb7e39d74b57bba31aa3a2b6a4c4%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.23918282300008%2C%2034.787364027000024%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_8250eb4411024cb0918e6f2ddba928fa.setContent%28html_1e06eb7e39d74b57bba31aa3a2b6a4c4%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_3c9eab7b57654eff83ae0e1bdba445d8.bindPopup%28popup_8250eb4411024cb0918e6f2ddba928fa%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_db29bc26361f49f2af9a891cf65ec2fd%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.250627708000025%2C34.771948671000075%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_24af5305aedc432292b1b6e7852c47eb%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_de67e35919ac4b56a16512f39e9af616%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_de67e35919ac4b56a16512f39e9af616%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.250627708000025%2C%2034.771948671000075%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_24af5305aedc432292b1b6e7852c47eb.setContent%28html_de67e35919ac4b56a16512f39e9af616%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_db29bc26361f49f2af9a891cf65ec2fd.bindPopup%28popup_24af5305aedc432292b1b6e7852c47eb%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_4bf39a57bafb4cf7ae1daf7b4f2b058e%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.23788952700005%2C34.792228666000035%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_e66d1547e1824de1837900db027add63%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_66827577c33a4304b7cfa3a3277c45a9%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_66827577c33a4304b7cfa3a3277c45a9%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.23788952700005%2C%2034.792228666000035%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_e66d1547e1824de1837900db027add63.setContent%28html_66827577c33a4304b7cfa3a3277c45a9%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_4bf39a57bafb4cf7ae1daf7b4f2b058e.bindPopup%28popup_e66d1547e1824de1837900db027add63%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_9dbbd228f9aa4df9912c285be55e10ae%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.23788952700005%2C34.792228666000035%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_f37af202a8c84e27b0814d5a8a1746a3%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_451aa9b2391d44a3a8a391ab12e4a149%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_451aa9b2391d44a3a8a391ab12e4a149%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.23788952700005%2C%2034.792228666000035%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_f37af202a8c84e27b0814d5a8a1746a3.setContent%28html_451aa9b2391d44a3a8a391ab12e4a149%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_9dbbd228f9aa4df9912c285be55e10ae.bindPopup%28popup_f37af202a8c84e27b0814d5a8a1746a3%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_6ffe2c0b6451494cb63ec9ace9fdb255%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.25167924300007%2C34.788839127000074%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_cfb1840946ca4d88a174d06cbac8d788%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_916b0de4ebc7411b90b81926f82866d3%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_916b0de4ebc7411b90b81926f82866d3%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.25167924300007%2C%2034.788839127000074%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_cfb1840946ca4d88a174d06cbac8d788.setContent%28html_916b0de4ebc7411b90b81926f82866d3%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_6ffe2c0b6451494cb63ec9ace9fdb255.bindPopup%28popup_cfb1840946ca4d88a174d06cbac8d788%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_7f6a329e99514bf1b010d6bdfb88aa8c%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.26663338700007%2C34.777502627000054%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_70aa81eabde14e619b8090344d8ceebd%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_9cd1dcee6126414d8fd55da4c742e105%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_9cd1dcee6126414d8fd55da4c742e105%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.26663338700007%2C%2034.777502627000054%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_70aa81eabde14e619b8090344d8ceebd.setContent%28html_9cd1dcee6126414d8fd55da4c742e105%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_7f6a329e99514bf1b010d6bdfb88aa8c.bindPopup%28popup_70aa81eabde14e619b8090344d8ceebd%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_9c3cc80d91b94350b6f66d1c255e4699%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.225105925000037%2C34.802902206000056%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_525a61766cad41eb8316e9b9c8bdca56%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_87fa7ff7a8764d019f5538c357eb520c%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_87fa7ff7a8764d019f5538c357eb520c%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.225105925000037%2C%2034.802902206000056%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_525a61766cad41eb8316e9b9c8bdca56.setContent%28html_87fa7ff7a8764d019f5538c357eb520c%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_9c3cc80d91b94350b6f66d1c255e4699.bindPopup%28popup_525a61766cad41eb8316e9b9c8bdca56%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_edfde2b4532d42da895c3c3888613f54%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.25134306500007%2C34.808245955000075%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_4cae1962f61b4552a7837bc646280a06%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_a6d7c9b263cc4f488069c5fada76f820%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_a6d7c9b263cc4f488069c5fada76f820%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.25134306500007%2C%2034.808245955000075%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_4cae1962f61b4552a7837bc646280a06.setContent%28html_a6d7c9b263cc4f488069c5fada76f820%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_edfde2b4532d42da895c3c3888613f54.bindPopup%28popup_4cae1962f61b4552a7837bc646280a06%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_5b05a13eee9d4ca29e6a5799689dc72f%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.24460084700007%2C34.81273640200004%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_9aa6825d2f934100a48ed31bc9daf023%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_3a8910ca69fb4ab7a7937a0d53d1e8ad%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_3a8910ca69fb4ab7a7937a0d53d1e8ad%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.24460084700007%2C%2034.81273640200004%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_9aa6825d2f934100a48ed31bc9daf023.setContent%28html_3a8910ca69fb4ab7a7937a0d53d1e8ad%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_5b05a13eee9d4ca29e6a5799689dc72f.bindPopup%28popup_9aa6825d2f934100a48ed31bc9daf023%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_edc832ef7b0a49029b3059165c808200%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.261187820000032%2C34.795048243000046%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_33d3ef8f7e90449b8282c933355a4531%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_b1a26daedc4140a2babfbfd38fe1275b%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_b1a26daedc4140a2babfbfd38fe1275b%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.261187820000032%2C%2034.795048243000046%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_33d3ef8f7e90449b8282c933355a4531.setContent%28html_b1a26daedc4140a2babfbfd38fe1275b%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_edc832ef7b0a49029b3059165c808200.bindPopup%28popup_33d3ef8f7e90449b8282c933355a4531%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_ac12e5c12982486cb438683124c2a8c3%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.26102075200004%2C34.79507639700006%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_4e3d758f40f34f698cafd6171e9149ab%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_04dcfb1806db49cd9c931e3a44001148%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_04dcfb1806db49cd9c931e3a44001148%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.26102075200004%2C%2034.79507639700006%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_4e3d758f40f34f698cafd6171e9149ab.setContent%28html_04dcfb1806db49cd9c931e3a44001148%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_ac12e5c12982486cb438683124c2a8c3.bindPopup%28popup_4e3d758f40f34f698cafd6171e9149ab%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_f13afb75baa6421186571a60c0ccb694%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.24567327000005%2C34.78226689400003%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_971e177ac2e945f7b1898ae0782c6a09%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_d0f6d22d960445bdab3638c2de1822da%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_d0f6d22d960445bdab3638c2de1822da%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.24567327000005%2C%2034.78226689400003%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_971e177ac2e945f7b1898ae0782c6a09.setContent%28html_d0f6d22d960445bdab3638c2de1822da%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_f13afb75baa6421186571a60c0ccb694.bindPopup%28popup_971e177ac2e945f7b1898ae0782c6a09%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_8c0962d2ef284c5cbf51e94e399c0086%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.247645666000036%2C34.79869774600007%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_e43f2fa52e4a47dfb25a59773ec96302%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_9e915ea9994349af85d866a02ddd2888%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_9e915ea9994349af85d866a02ddd2888%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.247645666000036%2C%2034.79869774600007%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_e43f2fa52e4a47dfb25a59773ec96302.setContent%28html_9e915ea9994349af85d866a02ddd2888%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_8c0962d2ef284c5cbf51e94e399c0086.bindPopup%28popup_e43f2fa52e4a47dfb25a59773ec96302%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_ae76df950519494cb9ebd3454e3e9e23%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.23501428700007%2C34.800342644000075%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_4a6075c8a125445493c43562dd932365%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_17b5a90131a849e5850ae883dadf4ffe%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_162adc5d3ab5426e96e08b85e4da345a%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_162adc5d3ab5426e96e08b85e4da345a%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.23501428700007%2C%2034.800342644000075%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_17b5a90131a849e5850ae883dadf4ffe.setContent%28html_162adc5d3ab5426e96e08b85e4da345a%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_ae76df950519494cb9ebd3454e3e9e23.bindPopup%28popup_17b5a90131a849e5850ae883dadf4ffe%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%3C/script%3E onload=\"this.contentDocument.open();this.contentDocument.write(    decodeURIComponent(this.getAttribute('data-html')));this.contentDocument.close();\" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>"
+      ],
+      "text/plain": [
+       "<folium.folium.Map at 0x1fe2f435160>"
+      ]
+     },
+     "execution_count": 1399,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Plotting competing venues\n",
+    "map_comp = folium.Map(location=[latitude, longitude], zoom_start=12)\n",
+    "for Latitude, Longitude in zip(df_comb['Latitude'], df_comb['Longitude']):\n",
+    "    label = '{}, {}'.format(Latitude, Longitude)\n",
+    "    label = folium.Popup(label, parse_html=True)\n",
+    "    folium.CircleMarker(\n",
+    "        [Latitude, Longitude],\n",
+    "        radius=5,\n",
+    "        popup=label,\n",
+    "        color='red',\n",
+    "        fill=True,\n",
+    "        fill_color='#fa050d',\n",
+    "        fill_opacity=0.7,\n",
+    "        parse_html=False).add_to(map_comp)\n",
+    "map_comp"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's merge the datasets and maps."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1400,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Available Properties</th>\n",
+       "      <th>Full Address</th>\n",
+       "      <th>Cost</th>\n",
+       "      <th>Size</th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "      <th>Neighborhood</th>\n",
+       "      <th>Restaurant</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "      <td>א</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Venue1</td>\n",
+       "      <td>סוקולוב 43.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>120</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.245394</td>\n",
+       "      <td>34.789741</td>\n",
+       "      <td>נווה זאב</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Venue4</td>\n",
+       "      <td>אפרים לרון 112.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>130</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>31.230874</td>\n",
+       "      <td>34.767214</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>Venue2</td>\n",
+       "      <td>התקוה 10.0</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>150</td>\n",
+       "      <td>10.0</td>\n",
+       "      <td>התקוה</td>\n",
+       "      <td>31.248209</td>\n",
+       "      <td>34.799296</td>\n",
+       "      <td>מ. אזרחי</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "  Available Properties      Full Address Cost Size  House Number Street Name  \\\n",
+       "0               Venue1      סוקולוב 43.0  NaN  120           NaN         NaN   \n",
+       "1               Venue1      סוקולוב 43.0  NaN  120           NaN         NaN   \n",
+       "2               Venue4  אפרים לרון 112.0  NaN  130           NaN         NaN   \n",
+       "3               Venue4  אפרים לרון 112.0  NaN  130           NaN         NaN   \n",
+       "4               Venue2        התקוה 10.0  NaN  150          10.0       התקוה   \n",
+       "\n",
+       "    Latitude  Longitude Neighborhood Restaurant  \n",
+       "0  31.245394  34.789741            א        NaN  \n",
+       "1  31.245394  34.789741     נווה זאב        NaN  \n",
+       "2  31.230874  34.767214          NaN        NaN  \n",
+       "3  31.230874  34.767214          NaN        NaN  \n",
+       "4  31.248209  34.799296     מ. אזרחי        NaN  "
+      ]
+     },
+     "execution_count": 1400,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_merged = df_venues.merge(df_comb, how = 'outer', sort = False)\n",
+    "df_merged.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1401,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Properties</th>\n",
+       "      <th>Address</th>\n",
+       "      <th>Cost</th>\n",
+       "      <th>Size</th>\n",
+       "      <th>House Number</th>\n",
+       "      <th>Street Name</th>\n",
+       "      <th>Latitude</th>\n",
+       "      <th>Longitude</th>\n",
+       "      <th>Neighborhood</th>\n",
+       "      <th>Restaurant</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "Empty DataFrame\n",
+       "Columns: [Properties, Address, Cost, Size, House Number, Street Name, Latitude, Longitude, Neighborhood, Restaurant]\n",
+       "Index: []"
+      ]
+     },
+     "execution_count": 1401,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Renaming the Available Properties and Full Address column to enable plotting\n",
+    "df_merged = df_merged.rename(columns={'Available Properties':'Properties', 'Full Address':'Address'})\n",
+    "df_merged.head(0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1402,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div style=\"width:100%;\"><div style=\"position:relative;width:100%;height:0;padding-bottom:60%;\"><span style=\"color:#565656\">Make this Notebook Trusted to load map: File -> Trust Notebook</span><iframe src=\"about:blank\" style=\"position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;\" data-html=%3C%21DOCTYPE%20html%3E%0A%3Chead%3E%20%20%20%20%0A%20%20%20%20%3Cmeta%20http-equiv%3D%22content-type%22%20content%3D%22text/html%3B%20charset%3DUTF-8%22%20/%3E%0A%20%20%20%20%3Cscript%3EL_PREFER_CANVAS%20%3D%20false%3B%20L_NO_TOUCH%20%3D%20false%3B%20L_DISABLE_3D%20%3D%20false%3B%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//cdn.jsdelivr.net/npm/leaflet%401.2.0/dist/leaflet.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js%22%3E%3C/script%3E%0A%20%20%20%20%3Cscript%20src%3D%22https%3A//cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js%22%3E%3C/script%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//cdn.jsdelivr.net/npm/leaflet%401.2.0/dist/leaflet.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css%22/%3E%0A%20%20%20%20%3Clink%20rel%3D%22stylesheet%22%20href%3D%22https%3A//rawgit.com/python-visualization/folium/master/folium/templates/leaflet.awesome.rotate.css%22/%3E%0A%20%20%20%20%3Cstyle%3Ehtml%2C%20body%20%7Bwidth%3A%20100%25%3Bheight%3A%20100%25%3Bmargin%3A%200%3Bpadding%3A%200%3B%7D%3C/style%3E%0A%20%20%20%20%3Cstyle%3E%23map%20%7Bposition%3Aabsolute%3Btop%3A0%3Bbottom%3A0%3Bright%3A0%3Bleft%3A0%3B%7D%3C/style%3E%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cstyle%3E%20%23map_1c9c09da06a24597a133021e5898dc15%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20position%20%3A%20relative%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20width%20%3A%20100.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20height%3A%20100.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20left%3A%200.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20top%3A%200.0%25%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/style%3E%0A%20%20%20%20%20%20%20%20%0A%3C/head%3E%0A%3Cbody%3E%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22folium-map%22%20id%3D%22map_1c9c09da06a24597a133021e5898dc15%22%20%3E%3C/div%3E%0A%20%20%20%20%20%20%20%20%0A%3C/body%3E%0A%3Cscript%3E%20%20%20%20%0A%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20bounds%20%3D%20null%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20map_1c9c09da06a24597a133021e5898dc15%20%3D%20L.map%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%27map_1c9c09da06a24597a133021e5898dc15%27%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7Bcenter%3A%20%5B31.2457442%2C34.7925181%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20zoom%3A%2012%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20maxBounds%3A%20bounds%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20layers%3A%20%5B%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20worldCopyJump%3A%20false%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20crs%3A%20L.CRS.EPSG3857%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20tile_layer_3116f52e6b44486bba48bbbaf96b7e44%20%3D%20L.tileLayer%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%27https%3A//%7Bs%7D.tile.openstreetmap.org/%7Bz%7D/%7Bx%7D/%7By%7D.png%27%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22attribution%22%3A%20null%2C%0A%20%20%22detectRetina%22%3A%20false%2C%0A%20%20%22maxZoom%22%3A%2018%2C%0A%20%20%22minZoom%22%3A%201%2C%0A%20%20%22noWrap%22%3A%20false%2C%0A%20%20%22subdomains%22%3A%20%22abc%22%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_87b7ad74aa2b4da69ba43cbb7f89f90e%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.245394%2C34.789741%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_4822555e258c41e29aca3bf3b2e6e310%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_b1c6a344c21b40908e02d3ddc3a10b7e%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_b1c6a344c21b40908e02d3ddc3a10b7e%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3EVenue1%2C%2031.245394%2C%2034.789741%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_4822555e258c41e29aca3bf3b2e6e310.setContent%28html_b1c6a344c21b40908e02d3ddc3a10b7e%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_87b7ad74aa2b4da69ba43cbb7f89f90e.bindPopup%28popup_4822555e258c41e29aca3bf3b2e6e310%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_6bf3621c948948dc9c6186a55e2340b9%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.245394%2C34.789741%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_9404c76609e847da9baa9efc266f7eef%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_4d46c35f76a84a75a28441ba50dbf84c%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_4d46c35f76a84a75a28441ba50dbf84c%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3EVenue1%2C%2031.245394%2C%2034.789741%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_9404c76609e847da9baa9efc266f7eef.setContent%28html_4d46c35f76a84a75a28441ba50dbf84c%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_6bf3621c948948dc9c6186a55e2340b9.bindPopup%28popup_9404c76609e847da9baa9efc266f7eef%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_ca126436dbb74e6fa1e0b923e02dc39d%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.230874%2C34.767214%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_31ef7e7c65924368bbf11e708f952b0b%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_0abc51a6bea84061af887ad2200d88fc%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_0abc51a6bea84061af887ad2200d88fc%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3EVenue4%2C%2031.230874%2C%2034.767214%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_31ef7e7c65924368bbf11e708f952b0b.setContent%28html_0abc51a6bea84061af887ad2200d88fc%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_ca126436dbb74e6fa1e0b923e02dc39d.bindPopup%28popup_31ef7e7c65924368bbf11e708f952b0b%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_560afdf0894248989d2e111d38f07166%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.230874%2C34.767214%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_909bd6b05af34ea38b36d01c74f9019f%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_49a373f8f6f442c68b31634b06e5d7f1%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_49a373f8f6f442c68b31634b06e5d7f1%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3EVenue4%2C%2031.230874%2C%2034.767214%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_909bd6b05af34ea38b36d01c74f9019f.setContent%28html_49a373f8f6f442c68b31634b06e5d7f1%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_560afdf0894248989d2e111d38f07166.bindPopup%28popup_909bd6b05af34ea38b36d01c74f9019f%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_732b698a55be404e9ba6d64e83077a80%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.248208526000038%2C34.799295502000064%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_a7afd0e33275432fb46c494ae160bb73%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_7eec561765734966ab1cea577b03d4d5%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_7eec561765734966ab1cea577b03d4d5%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3EVenue2%2C%2031.248208526000038%2C%2034.799295502000064%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_a7afd0e33275432fb46c494ae160bb73.setContent%28html_7eec561765734966ab1cea577b03d4d5%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_732b698a55be404e9ba6d64e83077a80.bindPopup%28popup_a7afd0e33275432fb46c494ae160bb73%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_3cf0040008eb463ca371aaf0b1a420ed%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.243252943000073%2C34.79904244700003%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22blue%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%233186cc%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_dbed8f6427c24fd69fb6a39251c66d8a%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_a83312f61c214c8090dbb32603897fc4%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_a83312f61c214c8090dbb32603897fc4%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3EVenue3%2C%2031.243252943000073%2C%2034.79904244700003%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_dbed8f6427c24fd69fb6a39251c66d8a.setContent%28html_a83312f61c214c8090dbb32603897fc4%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_3cf0040008eb463ca371aaf0b1a420ed.bindPopup%28popup_dbed8f6427c24fd69fb6a39251c66d8a%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_d22f302800fa441381e48476bf66da9e%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.23918282300008%2C34.787364027000024%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_a23b48ee8911463db3c89195f9363168%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_8fa3279ec7ee47b1b018aa3e1ec5aa1b%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_8fa3279ec7ee47b1b018aa3e1ec5aa1b%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.23918282300008%2C%2034.787364027000024%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_a23b48ee8911463db3c89195f9363168.setContent%28html_8fa3279ec7ee47b1b018aa3e1ec5aa1b%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_d22f302800fa441381e48476bf66da9e.bindPopup%28popup_a23b48ee8911463db3c89195f9363168%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_6e430527f92346738040422cae57828c%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.250627708000025%2C34.771948671000075%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_48d10ba3f972497ebe158dc50f25a2a0%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_1eff73cc524c4029a4c106925688e5a4%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_1eff73cc524c4029a4c106925688e5a4%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.250627708000025%2C%2034.771948671000075%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_48d10ba3f972497ebe158dc50f25a2a0.setContent%28html_1eff73cc524c4029a4c106925688e5a4%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_6e430527f92346738040422cae57828c.bindPopup%28popup_48d10ba3f972497ebe158dc50f25a2a0%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_4f2a07b1e99a4cd0b073b53c35d04186%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.23788952700005%2C34.792228666000035%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_168f967f005042f898ea774456dd2f73%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_e0701a7976844bbd9e43cb8fa1f60d74%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_e0701a7976844bbd9e43cb8fa1f60d74%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.23788952700005%2C%2034.792228666000035%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_168f967f005042f898ea774456dd2f73.setContent%28html_e0701a7976844bbd9e43cb8fa1f60d74%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_4f2a07b1e99a4cd0b073b53c35d04186.bindPopup%28popup_168f967f005042f898ea774456dd2f73%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_68af1ba8821c40d8ba8b236f70014939%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.23788952700005%2C34.792228666000035%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_8eccfc68af8f4056acf3a8b0ea40d2f4%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_5cd36965d311428886052877a434a4f2%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_5cd36965d311428886052877a434a4f2%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.23788952700005%2C%2034.792228666000035%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_8eccfc68af8f4056acf3a8b0ea40d2f4.setContent%28html_5cd36965d311428886052877a434a4f2%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_68af1ba8821c40d8ba8b236f70014939.bindPopup%28popup_8eccfc68af8f4056acf3a8b0ea40d2f4%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_9d607d9df59d45e5b78dbaa36982b7ce%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.25167924300007%2C34.788839127000074%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_be7e709d456043929cb969d1eb4c5422%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_fce1fda40f084e32a4533d6825f7f57c%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_fce1fda40f084e32a4533d6825f7f57c%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.25167924300007%2C%2034.788839127000074%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_be7e709d456043929cb969d1eb4c5422.setContent%28html_fce1fda40f084e32a4533d6825f7f57c%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_9d607d9df59d45e5b78dbaa36982b7ce.bindPopup%28popup_be7e709d456043929cb969d1eb4c5422%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_b20781a61e2d42c2b794e8795606e63d%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.26663338700007%2C34.777502627000054%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_a124061c4a124a5ea78fcc1e3e432d36%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_94969f53197842ee971289206049e9fc%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_94969f53197842ee971289206049e9fc%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.26663338700007%2C%2034.777502627000054%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_a124061c4a124a5ea78fcc1e3e432d36.setContent%28html_94969f53197842ee971289206049e9fc%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_b20781a61e2d42c2b794e8795606e63d.bindPopup%28popup_a124061c4a124a5ea78fcc1e3e432d36%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_2cd660a4d1544f91b20314b51dfe206a%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.225105925000037%2C34.802902206000056%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_35e14e944b1d42418000c592c49c7bc0%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_2ccc8dceb7e4467185ddb5e4f13f93e0%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_2ccc8dceb7e4467185ddb5e4f13f93e0%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.225105925000037%2C%2034.802902206000056%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_35e14e944b1d42418000c592c49c7bc0.setContent%28html_2ccc8dceb7e4467185ddb5e4f13f93e0%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_2cd660a4d1544f91b20314b51dfe206a.bindPopup%28popup_35e14e944b1d42418000c592c49c7bc0%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_7697464e19004abb9da6a2ae4f0d39ab%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.25134306500007%2C34.808245955000075%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_d7ddb6d1428f40baaa3a0698355887aa%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_94365d20d8c64964a9536540a27ec36f%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_94365d20d8c64964a9536540a27ec36f%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.25134306500007%2C%2034.808245955000075%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_d7ddb6d1428f40baaa3a0698355887aa.setContent%28html_94365d20d8c64964a9536540a27ec36f%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_7697464e19004abb9da6a2ae4f0d39ab.bindPopup%28popup_d7ddb6d1428f40baaa3a0698355887aa%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_04b9a87048154436bb56c2aef2be8ae2%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.24460084700007%2C34.81273640200004%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_2d9718508a344687bc5bdcb6fb4eb213%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_f329baf1f1074440a8cb8a7c3fa38c63%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_f329baf1f1074440a8cb8a7c3fa38c63%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.24460084700007%2C%2034.81273640200004%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_2d9718508a344687bc5bdcb6fb4eb213.setContent%28html_f329baf1f1074440a8cb8a7c3fa38c63%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_04b9a87048154436bb56c2aef2be8ae2.bindPopup%28popup_2d9718508a344687bc5bdcb6fb4eb213%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_0782ae9347fd4c9a9cf86c3319836537%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.261187820000032%2C34.795048243000046%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_1d60444927a34ed08153b13d82d75873%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_3080ffe3fb4f4b079673d293d44d078a%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_3080ffe3fb4f4b079673d293d44d078a%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.261187820000032%2C%2034.795048243000046%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_1d60444927a34ed08153b13d82d75873.setContent%28html_3080ffe3fb4f4b079673d293d44d078a%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_0782ae9347fd4c9a9cf86c3319836537.bindPopup%28popup_1d60444927a34ed08153b13d82d75873%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_b433c12d889c4e1dafa220f65fce86a4%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.26102075200004%2C34.79507639700006%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_9f8dbd3b42864fe98afe8bee98b2f948%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_8df949dd26e54e56bf441322993b34b8%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_8df949dd26e54e56bf441322993b34b8%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.26102075200004%2C%2034.79507639700006%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_9f8dbd3b42864fe98afe8bee98b2f948.setContent%28html_8df949dd26e54e56bf441322993b34b8%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_b433c12d889c4e1dafa220f65fce86a4.bindPopup%28popup_9f8dbd3b42864fe98afe8bee98b2f948%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_8d6fc9c9e0b948bf9710ae0984cab01d%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.24567327000005%2C34.78226689400003%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_fb47a64886fb43f0a7193041ddfe423f%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_a21a145d68454e74b6a5a8908c4fa019%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_a21a145d68454e74b6a5a8908c4fa019%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.24567327000005%2C%2034.78226689400003%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_fb47a64886fb43f0a7193041ddfe423f.setContent%28html_a21a145d68454e74b6a5a8908c4fa019%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_8d6fc9c9e0b948bf9710ae0984cab01d.bindPopup%28popup_fb47a64886fb43f0a7193041ddfe423f%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_02c629bcf012440599f7f2182b21271e%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.247645666000036%2C34.79869774600007%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_b5085d6802fb4b8ea30b398ee2a53f74%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_9a5f455d79bd4d31bbcdfd48d8ec8293%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_9a5f455d79bd4d31bbcdfd48d8ec8293%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.247645666000036%2C%2034.79869774600007%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_b5085d6802fb4b8ea30b398ee2a53f74.setContent%28html_9a5f455d79bd4d31bbcdfd48d8ec8293%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_02c629bcf012440599f7f2182b21271e.bindPopup%28popup_b5085d6802fb4b8ea30b398ee2a53f74%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20circle_marker_b90e0a3871ef4ad5a3773caf5a0360fb%20%3D%20L.circleMarker%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B31.23501428700007%2C34.800342644000075%5D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%22bubblingMouseEvents%22%3A%20true%2C%0A%20%20%22color%22%3A%20%22red%22%2C%0A%20%20%22dashArray%22%3A%20null%2C%0A%20%20%22dashOffset%22%3A%20null%2C%0A%20%20%22fill%22%3A%20true%2C%0A%20%20%22fillColor%22%3A%20%22%23fa050d%22%2C%0A%20%20%22fillOpacity%22%3A%200.7%2C%0A%20%20%22fillRule%22%3A%20%22evenodd%22%2C%0A%20%20%22lineCap%22%3A%20%22round%22%2C%0A%20%20%22lineJoin%22%3A%20%22round%22%2C%0A%20%20%22opacity%22%3A%201.0%2C%0A%20%20%22radius%22%3A%205%2C%0A%20%20%22stroke%22%3A%20true%2C%0A%20%20%22weight%22%3A%203%0A%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29.addTo%28map_1c9c09da06a24597a133021e5898dc15%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20var%20popup_84afee7247d0406db70c9110b21a8677%20%3D%20L.popup%28%7BmaxWidth%3A%20%27300%27%7D%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20var%20html_14d6dbd0202d4d73aff2aff934a52089%20%3D%20%24%28%27%3Cdiv%20id%3D%22html_14d6dbd0202d4d73aff2aff934a52089%22%20style%3D%22width%3A%20100.0%25%3B%20height%3A%20100.0%25%3B%22%3E31.23501428700007%2C%2034.800342644000075%3C/div%3E%27%29%5B0%5D%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20popup_84afee7247d0406db70c9110b21a8677.setContent%28html_14d6dbd0202d4d73aff2aff934a52089%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20circle_marker_b90e0a3871ef4ad5a3773caf5a0360fb.bindPopup%28popup_84afee7247d0406db70c9110b21a8677%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%0A%3C/script%3E onload=\"this.contentDocument.open();this.contentDocument.write(    decodeURIComponent(this.getAttribute('data-html')));this.contentDocument.close();\" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>"
+      ],
+      "text/plain": [
+       "<folium.folium.Map at 0x1fe2f0c4be0>"
+      ]
+     },
+     "execution_count": 1402,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#Plotting a combined map\n",
+    "map_merged = folium.Map(location=[latitude, longitude], zoom_start=12)\n",
+    "\n",
+    "for Properties, Latitude, Longitude, Restaurant in zip(df_merged['Properties'], df_merged['Latitude'], df_merged['Longitude'], df_merged['Restaurant']):\n",
+    "    if Properties == 'Venue1' or Properties == 'Venue2' or Properties == 'Venue3' or Properties == 'Venue4':\n",
+    "        label = '{}, {}, {}'.format(Properties, Latitude, Longitude, Restaurant)\n",
+    "        label = folium.Popup(label, parse_html=True)\n",
+    "        folium.CircleMarker(\n",
+    "            [Latitude, Longitude],\n",
+    "            radius=5,\n",
+    "            popup=label,\n",
+    "            color='blue',\n",
+    "            fill=True,\n",
+    "            fill_color='#3186cc',\n",
+    "            fill_opacity=0.7,\n",
+    "            parse_html=False).add_to(map_merged)\n",
+    "        \n",
+    "    elif Restaurant != 'nan':\n",
+    "        label = '{}, {}'.format(Latitude, Longitude)\n",
+    "        label = folium.Popup(label, parse_html=True)\n",
+    "        folium.CircleMarker(\n",
+    "            [Latitude, Longitude],\n",
+    "            radius=5,\n",
+    "            popup=label,\n",
+    "            color='red',\n",
+    "            fill=True,\n",
+    "            fill_color='#fa050d',\n",
+    "            fill_opacity=0.7,\n",
+    "            parse_html=False).add_to(map_merged)\n",
+    "    \n",
+    "map_merged"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Conclusions"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The map above reveals that theproperties in the center of town are located in close proximity to multiple competing restaurants, whereas Venue4 is isolated in the south-west, with no competitors in the neighborood and beyond, which suits Mrs. Name's requirements. "
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
